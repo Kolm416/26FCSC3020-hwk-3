@@ -1,7 +1,7 @@
 '''
 CSC3020 - Software Engineering Fundamentals
 Instructor: Thyago Mota
-Student: 
+Student: Leigha Lennon
 Description: Homework 03 - Routes for the User Authentication Web App
 '''
 
@@ -28,6 +28,17 @@ def signup():
     form = SignUpForm()
     if form.validate_on_submit():
         if form.passwd.data == form.passwd_confirm.data:
+            hashed = bcrypt.hashpw(form.passwd.data.encode('utf-8'), bcrypt.gensalt())
+
+            user = User(
+                id=form.id.data,
+                name=form.name.data,
+                about=form.about.data,
+                passwd=hashed
+            )
+
+            db.session.add(user)
+            db.session.commit()
             return redirect(url_for('index'))
 
     return render_template('signup.html', form=form)
@@ -39,13 +50,17 @@ def signup():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        pass
+        user = User.query.filter_by(id=form.id.data).first()
+        if user and bcrypt.checkpw(form.passwd.data.encode('utf-8'), user.passwd):
+            login_user(user)
+            return redirect(url_for('list_users'))
 
     return render_template('login.html', form=form)
 
 # TODO #3: implement the sign-out functionality
 @app.route('/users/signout', methods=['GET', 'POST'])
 def signout():
+    logout_user()
     return redirect(url_for('index'))
 
 @app.route('/users')
